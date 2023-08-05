@@ -12,6 +12,7 @@ What to do with this model :
  - Model Predictive Control
  - Building stock simulation
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,14 +24,14 @@ t_out = 25*np.sin(np.linspace(0, np.pi, 8760)) + np.tile(5*np.sin(np.linspace(-n
 
 #Heating setpoint temperature
 t_set_winter = 21*np.ones(24)
-t_set_winter[0:7] += -4
+t_set_winter[:7] += -4
 t_set_winter = np.tile(t_set_winter,365)
 t_set_winter[120*24:300*24] = 12 #no heating in summer
 
 #Cooling setpoint temperature
 t_set_summer = 25*np.ones(24)
 t_set_summer = np.tile(t_set_summer,365)
-t_set_summer[0:120*24] = 30  #no cooling in winter
+t_set_summer[:120*24] = 30
 t_set_summer[300*24:] = 30 #no cooling in winter
 
 #Internal heat load from occupancy (appliances and humans)
@@ -45,14 +46,14 @@ internal_load_solar = np.tile(internal_load_solar,365) * 5*np.sin(np.linspace(0,
 #External heat load from solar flux which is absorbed by walls TODO : more realistic solar flux
 external_load_solar = 5*internal_load_solar
 
-rc_solicitation = dict()
-rc_solicitation['t_out'] = t_out
-rc_solicitation['t_set_winter'] = t_set_winter
-rc_solicitation['t_set_summer'] = t_set_summer
-rc_solicitation['internal_load_occ'] = internal_load_occ
-rc_solicitation['internal_load_solar'] = internal_load_solar
-rc_solicitation['external_load_solar'] = external_load_solar
-
+rc_solicitation = {
+    't_out': t_out,
+    't_set_winter': t_set_winter,
+    't_set_summer': t_set_summer,
+    'internal_load_occ': internal_load_occ,
+    'internal_load_solar': internal_load_solar,
+    'external_load_solar': external_load_solar,
+}
 #%% Building characteristics for RC model parameters calculation
 rho_air = 1.2 # air density (kg.m-3)
 c_air = 1004 # air heat capacity (J.K^-1.kg^-1)
@@ -67,23 +68,24 @@ h_out = 20 # outdoor convection coefficient [W/(K.m²)]
 m_air_new = 0.6 # mass flow rate of fresh air [Vol/hour]
 v_in = 250 # indoor air volume [m3]
 inertia_surf = 432000 # surface inertia of building structure [J/K.m²]
-rc_parameters = dict() # dictionary with the R and C values
-rc_parameters['r_conv_ext'] = 1/(h_out*s_out)
-rc_parameters['r_cond_wall'] = 1/(u_out*s_out)
-rc_parameters['r_conv_int'] = 1/(h_in*s_in)
-rc_parameters['r_infiltration'] = 1/(rho_air*c_air*m_air_new*v_in/3600)
-rc_parameters['r_wondows'] = 1/(u_windows*s_windows)
-rc_parameters['C_air'] = v_in * c_air * rho_air * 15 # add inertia of furniture and light walls (x15)
-rc_parameters['C_wall'] = inertia_surf * s_floor
-    
+rc_parameters = {
+    'r_conv_ext': 1 / (h_out * s_out),
+    'r_cond_wall': 1 / (u_out * s_out),
+    'r_conv_int': 1 / (h_in * s_in),
+    'r_infiltration': 1 / (rho_air * c_air * m_air_new * v_in / 3600),
+    'r_wondows': 1 / (u_windows * s_windows),
+    'C_air': v_in * c_air * rho_air * 15,
+    'C_wall': inertia_surf * s_floor,
+}
 #%% Simulation parameters
 delta = 600
-simu_parameters = dict()
-simu_parameters['delta'] = delta # simulation time step in second (300 seconds to 1800 seconds)
-simu_parameters['p_heat_max'] = [100 * s_floor]* len(t_out) # maximum heat delivered 100 W per m² (watt)
-simu_parameters['p_cold_max'] = [-50 * s_floor] * len(t_out) # maximum cold delivered  50 W per m² (watt)
-simu_parameters['start'] = 0 # first day of simulation
-simu_parameters['stop'] = 365 # last day of simulation
+simu_parameters = {
+    'delta': delta,
+    'p_heat_max': [100 * s_floor] * len(t_out),
+    'p_cold_max': [-50 * s_floor] * len(t_out),
+    'start': 0,
+    'stop': 365,
+}
 #TODO simulate a large commercial building in place of a dwelling
 
 def R6C2 (simu_parameters, rc_solicitation, rc_parameters) :
